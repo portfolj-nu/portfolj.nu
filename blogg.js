@@ -9,9 +9,14 @@
      bakåt (högst 30 dagar) eller kalenderns nästa rapport framåt; skriv rubriken när händelsen skrivs.
    - tankar: korta inlägg, ett per datum, nyast först eller i valfri ordning (sidan sorterar). Ett nytt inlägg är en ny
      rad överst: { datum: 'ÅÅÅÅ-MM-DD', sv: '...', en: '...' }. De första inläggen (2026-10-04) är positionskortens ord
-     om medelvärdena, ordagrant, med vecko- eller dagsgrafen utskriven framför. */
+     om medelvärdena, ordagrant, med vecko- eller dagsgrafen utskriven framför.
+   Applied Materials, Amazon och Global Water Resources (köpta 9 okt, inlagda 2026-10-14): siffrorna ur bolagens 8-K,
+   lästa på sec.gov 2026-10-14; alla tre rapporterna kom efter stängning (SEC:s mottagning 16:03, 16:06 och 20:02 New
+   York-tid), så reaktionen är dagen efter. Inga tankar, eftersom ägaren inte har skrivit några. Bitcoin har inga
+   rapporter: texten säger hur innehavet ägs och räknas (valour.com, läst 2026-10-14), och har ingen rubrik, så att den
+   inte tävlar om förstasidans huvudrubrik. */
 window.PORTFOLJ_BLOGG = {
-  uppdaterad: '2026-10-05',
+  uppdaterad: '2026-10-14',
   innehav: {
     ENR: {
       datum: '2026-08-05',
@@ -83,6 +88,46 @@ window.PORTFOLJ_BLOGG = {
           sv: 'Veckografen: SMA 52 ligger på ett bra avstånd från priset och är den viktigaste nivån just nu. Dagsgrafen: bra avstånd från SMA 52. SMA 21 har kramat priset en längre tid, vilket är okej. SMA-strukturen stödjer fortfarande den bullish hypotesen.',
           en: 'Weekly chart: the SMA 52 is at a good distance from the price and is the most important level right now. Daily chart: a good distance from the SMA 52. The SMA 21 has hugged the price for a long time, which is fine. The SMA structure still supports the bullish hypothesis.' },
       ],
+    },
+    AMAT: {
+      datum: '2026-08-13',
+      rubrik: { sv: 'Applied Materials föll 5 % trots rekordrapport', en: 'Applied Materials fell 5% despite a record report' },
+      sv: 'Rapporten 13 augusti: rekordintäkter på 9,12 miljarder dollar, 25 % mer än året innan, och prognosen för nästa kvartal blev 10,25 miljarder. Aktien föll ändå 5 % dagen efter, medan S&P 500 nästan stod still. Nästa rapport väntas i mitten av november.',
+      en: 'The 13 August report: record revenue of $9.12 billion, 25% more than a year earlier, and a forecast of $10.25 billion for the next quarter. The shares still fell 5% the next day, while the S&P 500 barely moved. The next report is expected in mid-November.',
+      kallor: [
+        { sv: 'Applied Materials, rapport Q3 räkenskapsåret 2026 (SEC 8-K)', en: 'Applied Materials, Q3 fiscal 2026 release (SEC 8-K)', url: 'https://www.sec.gov/Archives/edgar/data/6951/000162828026056699/exhibit991q32026earningsre.htm' },
+      ],
+      tankar: [],
+    },
+    AMZN: {
+      datum: '2026-07-30',
+      rubrik: { sv: 'Amazon steg 15 % efter rapporten', en: 'Amazon rose 15% after its report' },
+      sv: 'Rapporten 30 juli: försäljningen steg 20 % till 200,6 miljarder dollar och molntjänsten AWS växte 37 %. Rörelseresultatet blev 27,5 miljarder mot 19,2 miljarder året innan. Aktien steg 15 % dagen efter, 15 procentenheter mer än S&P 500. Nästa rapport väntas i slutet av oktober.',
+      en: 'The 30 July report: net sales rose 20% to $200.6 billion and the AWS cloud business grew 37%. Operating income was $27.5 billion, against $19.2 billion a year earlier. The shares rose 15% the next day, 15 percentage points more than the S&P 500. The next report is expected in late October.',
+      kallor: [
+        { sv: 'Amazon, rapport Q2 2026 (SEC 8-K)', en: 'Amazon, Q2 2026 release (SEC 8-K)', url: 'https://www.sec.gov/Archives/edgar/data/1018724/000101872426000024/amzn-20260630xex991.htm' },
+      ],
+      tankar: [],
+    },
+    GWRS: {
+      datum: '2026-08-12',
+      rubrik: { sv: 'Global Water Resources steg 17 % efter rapporten', en: 'Global Water Resources rose 17% after its report' },
+      sv: 'Rapporten 12 augusti: intäkterna steg 25 % till 17,8 miljoner dollar, varav 2,1 miljoner från avtal om ny infrastruktur; de reglerade intäkterna steg 10 %. Anslutningarna blev 5,8 % fler, mest genom köpet av sju vattensystem i Tucson. Aktien steg 17 % dagen efter, 16 procentenheter mer än S&P 500. Nästa rapport väntas i november.',
+      en: 'The 12 August report: revenue rose 25% to $17.8 million, of which $2.1 million came from agreements on new infrastructure; regulated revenue rose 10%. Connections grew 5.8%, mostly through the purchase of seven water systems in Tucson. The shares rose 17% the next day, 16 percentage points more than the S&P 500. The next report is expected in November.',
+      kallor: [
+        { sv: 'Global Water Resources, rapport Q2 2026 (SEC 8-K)', en: 'Global Water Resources, Q2 2026 release (SEC 8-K)', url: 'https://www.sec.gov/Archives/edgar/data/1434728/000162828026056434/earningsrelease2026-q2.htm' },
+      ],
+      tankar: [],
+    },
+    BTC: {
+      datum: '2026-10-09',
+      reaktion: false,
+      sv: 'Köpt 9 oktober som Valour Bitcoin Zero SEK på Spotlight Stock Market, där varje andel är 0,0001 bitcoin och förvaltningsavgiften är noll. Bitcoin har inga rapporter, så sidan tar priset vid New Yorks stängning, samma klockslag som aktierna, och ställer det mot samma insats i MSCI World.',
+      en: 'Bought on 9 October as Valour Bitcoin Zero SEK on the Spotlight Stock Market, where each unit is 0.0001 bitcoin and the management fee is zero. Bitcoin has no reports, so the page takes the price at the New York close, the same time as the shares, and sets it against the same money in MSCI World.',
+      kallor: [
+        { sv: 'Valour, Bitcoin Zero SEK', en: 'Valour, Bitcoin Zero SEK', url: 'https://valour.com/en/products/bitcoin-zero-sek' },
+      ],
+      tankar: [],
     },
   },
 };

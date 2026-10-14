@@ -129,7 +129,7 @@ a{color:inherit}
 
 /* staplarna per position */
 .bars{display:grid;gap:6px;margin-top:8px}
-.barrow{display:grid;grid-template-columns:7.6em minmax(0,1fr) 5.6em;align-items:center;gap:10px;font-family:var(--sans);font-size:13px}
+.barrow{display:grid;grid-template-columns:8.6em minmax(0,1fr) 5.6em;align-items:center;gap:10px;font-family:var(--sans);font-size:13px}
 .barrow .v{text-align:right;font-family:var(--serif);font-weight:600;font-size:15px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .barrow svg{display:block;width:100%;height:14px;overflow:visible}
 
@@ -138,6 +138,27 @@ a{color:inherit}
 .story{position:relative;padding:12px var(--luft) 12px;border-left:1px solid var(--hair);min-width:0}
 .story:first-child{border-left:0;padding-left:0}
 .story:last-child{padding-right:0}
+/* (2026-10-14) puffarnas plats i raden sätts av radPlatser() i tidning.js, så att rasterreglerna gäller för varje antal
+   innehav: rader om fem på 60 kolumner, och en sista rad med färre puffar delar hela bredden lika (nio innehav: fem och
+   fyra, förut en tom ruta sist och en kantlinje vid sidans vänstra kant på andra raden) */
+@media (min-width:1181px){
+  .desk{grid-template-columns:repeat(60,minmax(0,1fr))}
+  .story{grid-column:span 12}
+  .story[data-bs="15"]{grid-column:span 15}
+  .story[data-bs="20"]{grid-column:span 20}
+  .story[data-bs="30"]{grid-column:span 30}
+  .story[data-bs="60"]{grid-column:span 60}
+  .story[data-b]{border-left:1px solid var(--hair);padding-left:var(--luft);padding-right:var(--luft)}
+  .story[data-b^="f"]{border-left:0;padding-left:0}
+  .story[data-b$="l"]{padding-right:0}
+  .story[data-bt="1"]{border-top:1px solid var(--hair)}
+  /* fler än sex innehav (2026-10-14): staplarna tätare och mätarens minsta yta 164 px i stället för 180, så att
+     högerspalten inte blir längre än huvudspalten; kalendern i två spalter när den har fler än fem rader */
+  .rail .bars.tata{gap:4px}
+  .rail:has(.bars.tata) .graphic:first-child .chartwrap{min-height:164px}
+  .lower .callist.tva{columns:2;column-gap:var(--gut)}
+  .lower .callist.tva li{break-inside:avoid}
+}
 /* puffens sex delar (namn, innehav, rubrik med text, graf, fot, fakta) står på samma rader i alla puffar i en rad:
    rubrikerna börjar på samma linje och graferna och fötterna står på samma linje, hur lång texten än är */
 @supports (grid-template-rows:subgrid){
@@ -323,16 +344,17 @@ details.numbers table{margin-top:8px;max-width:760px}
   .rail{grid-column:1 / -1;border-left:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border-top:1px solid var(--hair);margin-top:14px}
   .rail .graphic,.rail .graphic:first-child{border-top:0;margin:0;padding:12px var(--luft) 12px 0}
   .rail .graphic + .graphic{border-left:1px solid var(--hair);margin:0;padding:12px 0 12px var(--luft)}
-  /* fem puffar på sex kolumner: de två största överst på halva bredden var, de tre andra under på en tredjedel var,
-     så att ingen rad har en tom halva (förut stod den femte ensam) */
+  /* puffarna på sex kolumner i rader om tre; blir två eller fyra över står de som halva rader överst (fem: de två
+     största på halva bredden och tre under), så att ingen rad har en tom del. Platserna sätts av radPlatser() i
+     tidning.js (2026-10-14; förut nth-child-regler för exakt fem, och med nio stod den sista ensam) */
   .desk{grid-template-columns:repeat(6,minmax(0,1fr))}
   .story{grid-column:span 2}
-  .story:nth-child(-n+2){grid-column:span 3}
-  .story,.story:first-child,.story:last-child{border-left:0;padding:12px var(--luft) 14px;border-top:1px solid var(--hair)}
-  .story:nth-child(-n+2){border-top:0}
-  .story:nth-child(1),.story:nth-child(3){padding-left:0}
-  .story:nth-child(2),.story:nth-child(5){padding-right:0}
-  .story:nth-child(2),.story:nth-child(4),.story:nth-child(5){border-left:1px solid var(--hair)}
+  .story[data-ts="3"]{grid-column:span 3}
+  .story[data-ts="6"]{grid-column:span 6}
+  .story,.story:first-child,.story:last-child{border-left:1px solid var(--hair);padding:12px var(--luft) 14px;border-top:0}
+  .story[data-t^="f"]{border-left:0;padding-left:0}
+  .story[data-t$="l"]{padding-right:0}
+  .story[data-tt="1"]{border-top:1px solid var(--hair)}
   .facts{display:grid}
   .listwrap{display:none}
   /* I korthet över hela bredden med raderna i två spalter; under den Kalendern (5) och Marknaderna (7): kalendern blir

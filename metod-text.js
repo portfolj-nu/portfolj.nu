@@ -8,6 +8,20 @@ window.TidningMetod = function (T) {
   const nameList = names.slice(0, -1).join(', ') + L(' och ', ' and ') + names[names.length - 1];
   /* Den publika upplagan (Om portföljen): syftet, jämförelsen, riktkurserna och det som inte visas; varje sektion med
      "kol" blir en kolumn överst på sidan. Konceptets privata metodsida nedan följer inte med till sajten. */
+  const lista = a => (a.length > 1 ? a.slice(0, -1).join(', ') + L(' och ', ' and ') + a[a.length - 1] : a[0]);
+  /* Riktkurser räknade senare än de första, bitcoin ur IBIT och innehav utan riktkurs (2026-10-14): ur datan, så att texten
+     följer innehaven när de ändras */
+  function senareRiktkurser() {
+    const forst = (T.S.meta || {}).oiret_datum, ut = [], dagar = {};
+    T.BYW.filter(p => T.hasOpt(p) && p.oiret.datum && forst && p.oiret.datum !== forst).forEach(p => { (dagar[p.oiret.datum] = dagar[p.oiret.datum] || []).push(T.nm(p)); });
+    Object.keys(dagar).sort().forEach(d => ut.push(L('Riktkurserna för ' + lista(dagar[d]) + ' räknades ' + fmt.dS(d) + ', med samma ränta och marknadstal som de andra.',
+      'The price targets for ' + lista(dagar[d]) + ' were calculated on ' + fmt.dS(d) + ', with the same rate and market inputs as the others.')));
+    T.BYW.filter(p => T.hasOpt(p) && p.oiret.kalla === 'IBIT').forEach(p => { const k = /korrelation ([0-9.]+)/.exec(p.oiret.metod_not || '');
+      ut.push(L(T.nm(p) + 's riktkurs räknas ur optionerna på IBIT, en börsfond som äger bitcoin' + (k ? ' (korrelation ' + String(k[1]).replace('.', ',') + ' dag för dag det senaste året)' : '') + ', och gäller bitcoins pris i dollar. Bitcoin ligger utanför studiens bevis.',
+        T.nm(p) + "'s price target is calculated from the options on IBIT, a fund that holds bitcoin" + (k ? ' (correlation ' + k[1] + ' day by day over the past year)' : '') + ", and applies to bitcoin's price in dollars. Bitcoin is outside the study's evidence.")); });
+    T.BYW.filter(p => !T.hasOpt(p) && (p.oiret || {}).orsak).forEach(p => ut.push(L(T.nm(p) + ' har ingen riktkurs: ' + T.ingenRikt(p) + '.', T.nm(p) + ' has no price target: ' + T.ingenRikt(p) + '.')));
+    return ut;
+  }
   if (pub()) {
     const R = P.risk || {}, oi = T.S.oiret_inputs || {};
     /* kvällskörningens data (2026-10-05) räknar kronorna med Riksbankens dagliga kurser; prototypdatan med Yahoos */
@@ -24,8 +38,8 @@ window.TidningMetod = function (T) {
               'The numbers are calculated by a machine from market data; we write the texts and thoughts about the holdings ourselves. This version is a prototype with prices from the close on ' + fmt.wd(T.ASOF) + ', ' + fmt.dSY(T.ASOF) + '; soon the numbers will update automatically every weekday evening after the close.')
             : L('Talen räknas av en maskin ur marknadsdata och uppdateras automatiskt varje vardagskväll efter stängningen, senast med kurserna från ' + fmt.wd(T.ASOF) + ' ' + fmt.dSY(T.ASOF) + '. Texterna och tankarna om innehaven skriver vi själva.',
               'The numbers are calculated by a machine from market data and update automatically every weekday evening after the close, most recently with prices from ' + fmt.wd(T.ASOF) + ', ' + fmt.dSY(T.ASOF) + '. We write the texts and thoughts about the holdings ourselves.'),
-          L('En portfölj på fem positioner under några månader bevisar ingen förmåga att slå marknaden. Sidan visar försöket öppet, även när det går dåligt.',
-            'A portfolio of five positions over a few months proves no ability to beat the market. The site shows the attempt openly, even when it goes badly.'),
+          L('En portfölj på ' + ordet(POS.length) + ' positioner under några månader bevisar ingen förmåga att slå marknaden. Sidan visar försöket öppet, även när det går dåligt.',
+            'A portfolio of ' + ordet(POS.length) + ' positions over a few months proves no ability to beat the market. The site shows the attempt openly, even when it goes badly.'),
         ] },
       { h: L('Så jämför vi', 'How we compare'),
         kol: L('MSCI World Net direkt från MSCI, med utdelningarna återinvesterade, omräknat till kronor. Portföljens egna utdelningar räknas också in. Fondens avgift ingår inte.',
@@ -48,7 +62,8 @@ window.TidningMetod = function (T) {
             'Price target = today\'s price × (1 + expected return over a year), rounded to a whole number. SVIX² is measured as in the study, over a volatility surface. The authors report that the method, used directly as a forecast, gives an out-of-sample R² of 21% relative to analysts\' price targets.'),
           { table: [[L('Innehav', 'Holding'), L('Riktkurs om ett år', 'Price target in a year'), L('Not', 'Note')]].concat(T.BYW.map(p => [T.nm(p),
             T.malTal(p) === null ? '—' : fmt.num(T.malTal(p), 0) + ' ' + (T.en() ? p.chart_ccy : ({ USD: 'dollar', EUR: 'euro' }[p.chart_ccy] || p.chart_ccy)) + (p.chart !== p.held ? ' (' + p.chart + ')' : ''),
-            T.malTal(p) === null ? L('inga optioner hos datakällan', 'no options at the data source') : (T.malNot(p) || L('volatilitetsytan', 'volatility surface'))])) },
+            T.malTal(p) === null ? T.ingenRikt(p) : (T.malNot(p) || L('volatilitetsytan', 'volatility surface'))])) },
+          ...senareRiktkurser(),
           L('Riktkurserna är ännu inte jämförda med författarnas egna serier, som slutar i augusti 2025. Emcor har optioner till ungefär ett halvår. Koreafondens egna optioner har för få bud, så dess riktkurs räknas ur optionerna på EWY, en fond med samma koreanska storbolag (korrelation 0,997 det senaste året); fonden ligger utanför studiens bevis. Siemens Energys optioner handlas på Eurex i Frankfurt: där räknas riktkursen ur Eurex dagliga avräkningspriser, med samma yta och med den euroränta som priserna ger. Studien prövade bara aktier i S&P 500, så även Siemens Energy ligger utanför dess bevis.',
             'The price targets are not yet compared with the authors\' own series, which end in August 2025. Emcor has options out to about half a year. The Korea fund\'s own options have too few bids, so its price target is calculated from the options on EWY, a fund holding the same large Korean companies (correlation 0.997 over the past year); the fund is outside the study\'s evidence. Siemens Energy\'s options trade on Eurex in Frankfurt: its price target is calculated from Eurex daily settlement prices, with the same surface and the euro rate the prices imply. The study only tested S&P 500 stocks, so Siemens Energy is outside its evidence too.'),
           { src: L('Riskfri ränta ' + fmt.pctU(oi.rf, 2) + ' (FRED DGS1, ' + fmt.dS(oi.rf_date) + '); för Siemens Energy euroräntan ' + fmt.pctU(oi.rf_eur, 2) + ' ur Eurex priser (ECB:s ettåriga AAA-ränta ' + fmt.dS(oi.rf_date) + ': ' + fmt.pctU(oi.rf_eur_ecb, 2) + '). Källa: Martin, Rodenkirchen, Wagner och Wang (2026); författarnas data och läsmig:',
@@ -63,6 +78,7 @@ window.TidningMetod = function (T) {
             L('Belopp i kronor, antal och konton. Allt visas som procent av insatsen.', 'SEK amounts, quantities and accounts. Everything is shown as a percentage of the money in.'),
             L('Reglerna för när en position köps eller säljs. Nivåerna vi följer syns i graferna, men inte vad vi gör vid dem.', 'The rules for when a position is bought or sold. The levels we follow are shown in the charts, but not what we do at them.'),
             L('Skatt, avgifter och sålda positioner. Resultatet räknas på köpkurserna.', 'Tax, fees and sold positions. Results use the purchase prices.'),
+            L('Alla affärer. Sajten följer ett urval av innehaven; kortsiktiga affärer med hävstång räknas inte.', 'Every trade. The site follows a selection of the holdings; short-term leveraged trades are not counted.'),
             L('Framtiden. Riktkurserna är marknadens prissättning, inte en prognos.', 'The future. The price targets are the market\'s pricing, not a forecast.'),
             L('Risken är bakåtblickande: ett år med dagens vikter, volatilitet ' + fmt.pctU(R.vol_ann, 0) + ' per år och beta ' + fmt.num(R.beta_msci, 2) + ' mot MSCI World.', 'Risk looks backwards: one year at today\'s weights, volatility ' + fmt.pctU(R.vol_ann, 0) + ' a year and beta ' + fmt.num(R.beta_msci, 2) + ' to MSCI World.'),
           ] },

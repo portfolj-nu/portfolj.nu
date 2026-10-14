@@ -131,15 +131,19 @@ const BUILT = (S.meta && S.meta.built) || ASOF;
 const PROTOTYP = !S.meta || S.meta.kind !== 'EOD';
 const maxBy = (a, f) => a.reduce((b, x) => (f(x) > f(b) ? x : b));
 const minBy = (a, f) => a.reduce((b, x) => (f(x) < f(b) ? x : b));
+/* (2026-10-14) Applied Materials, Amazon, Global Water Resources och bitcoin köptes 9 okt */
 const NAMES = {
-  sv: { ENR: 'Siemens Energy', PLTR: 'Palantir', NVDA: 'Nvidia', EME: 'Emcor', FLKR: 'Koreafonden' },
-  en: { ENR: 'Siemens Energy', PLTR: 'Palantir', NVDA: 'Nvidia', EME: 'Emcor', FLKR: 'Korea fund' },
+  sv: { ENR: 'Siemens Energy', PLTR: 'Palantir', NVDA: 'Nvidia', EME: 'Emcor', FLKR: 'Koreafonden', AMAT: 'Applied Materials', AMZN: 'Amazon', GWRS: 'Global Water Resources', BTC: 'Bitcoin' },
+  en: { ENR: 'Siemens Energy', PLTR: 'Palantir', NVDA: 'Nvidia', EME: 'Emcor', FLKR: 'Korea fund', AMAT: 'Applied Materials', AMZN: 'Amazon', GWRS: 'Global Water Resources', BTC: 'Bitcoin' },
 };
 /* nm: namnet i rubriker och listor; prose: namnet mitt i en mening (engelskan vill ha artikel). */
 const nm = p => (NAMES[state.lang][p.id] || p.name);
 const prose = p => (en() && p.id === 'FLKR' ? 'the Korea fund' : nm(p));
-const TINY = { ENR: 'Siemens', PLTR: 'Palantir', NVDA: 'Nvidia', EME: 'Emcor', FLKR: 'Korea' };
-const CAL = { 'ENR.DE': 'Siemens Energy', PLTR: 'Palantir', NVDA: 'Nvidia', EME: 'Emcor', '005930.KS': 'Samsung', '000660.KS': 'SK hynix' };
+const TINY = { ENR: 'Siemens', PLTR: 'Palantir', NVDA: 'Nvidia', EME: 'Emcor', FLKR: 'Korea', AMAT: 'Applied', AMZN: 'Amazon', GWRS: 'Global Water', BTC: 'Bitcoin' };
+const CAL = { 'ENR.DE': 'Siemens Energy', PLTR: 'Palantir', NVDA: 'Nvidia', EME: 'Emcor', '005930.KS': 'Samsung', '000660.KS': 'SK hynix', AMAT: 'Applied Materials', AMZN: 'Amazon', GWRS: 'Global Water Resources' };
+/* ett innehav som ägs som en annan produkt än grafen visar, utan växling (bitcoin som Valour Bitcoin Zero SEK, 2026-10-14) */
+const agd = p => p.agd_som || null;
+const agdText = p => { const a = agd(p); return a ? L('ägs som ' + a.namn + ', ' + String(a.bitcoin_per_andel).replace('.', ',') + ' bitcoin per andel', 'held as ' + a.namn + ', ' + a.bitcoin_per_andel + ' bitcoin per unit') : ''; };
 const short = t => String(t || '').replace(/\.[A-Z]{1,3}$/, '');
 const exchange = p => { const m = /\(([^)]*)\)\s*$/.exec(p.held_name || ''); if (!m) return ''; const parts = m[1].split(','); return parts[parts.length - 1].trim(); };
 const regW = p => (p.regression || []).find(r => r.tf === 'W' && r.channel) || null;
@@ -175,12 +179,18 @@ function malNot(p) {
   if (malDatum(o)) bits.push(L('räknad ' + dS(o.datum), 'calculated ' + dS(o.datum)));
   if (o.kalla === 'Eurex') bits.push(L('optioner från Eurex', 'options from Eurex'));
   if (o.kalla === 'EWY') bits.push(L('optioner på EWY', 'options on EWY'));
+  if (o.kalla === 'IBIT') bits.push(L('optioner på IBIT', 'options on IBIT'));
   if (o.approx) bits.push(L('optioner bara till ca ' + approxMonths(o) + ' mån', 'options only to about ' + approxMonths(o) + ' mo'));
   if (o.metod === 'rå') bits.push(L('tunn optionskedja', 'thin option chain'));
   if (outside(o)) bits.push(isEtf(o) ? L('ETF, utanför studiens bevis', "ETF, outside the study's evidence") : L('utanför studiens bevis', "outside the study's evidence"));
   return bits.join(', ');
 }
-const malText = p => (malTal(p) === null ? L('ingen riktkurs: inga optioner hos datakällan', 'no price target: no options at the data source') : num(malTal(p), 0) + ' ' + ccyWord(p.chart_ccy));
+/* varför riktkursen saknas: orsaken i datan när den finns (Global Water Resources har optioner men för få bud, 2026-10-14),
+   annars att datakällan saknar optioner */
+const ingenRikt = p => { const o = p.oiret || {}; return o.orsak ? L(o.orsak.sv, o.orsak.en) : L('inga optioner hos datakällan', 'no options at the data source'); };
+const ingenRiktKort = p => ((p.oiret || {}).orsak ? L('för få bud', 'too few bids') : L('inga optioner', 'no options'));
+const antalOrd = n => (en() ? ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'] : ['noll', 'en', 'två', 'tre', 'fyra', 'fem', 'sex', 'sju', 'åtta', 'nio', 'tio'])[n] || String(n);
+const malText = p => (malTal(p) === null ? L('ingen riktkurs: ', 'no price target: ') + ingenRikt(p) : num(malTal(p), 0) + ' ' + ccyWord(p.chart_ccy));
 /* avståndet från dagens kurs till riktkursen, ur den oavrundade riktkursen (samma tal som grafens etikett) */
 const tillRikt = p => (hasOpt(p) ? pctS(p.oiret.er) : '—');
 const leadWord = () => (P.ret >= P.msci_ret ? L('före', 'ahead of') : L('efter', 'behind'));
@@ -192,6 +202,7 @@ function oiNote(o, shortForm) {
   if (o.approx) bits.push(shortForm ? L(approxMonths(o) + ' mån uppräknat', approxMonths(o) + ' mo annualised') : L('bara ca ' + approxMonths(o) + ' mån optioner, uppräknat', 'only about ' + approxMonths(o) + ' months of options, annualised'));
   if (o.kalla === 'Eurex') bits.push(shortForm ? 'Eurex' : L('Eurex avräkningspriser', 'Eurex settlement prices'));
   if (o.kalla === 'EWY') bits.push(shortForm ? 'EWY' : L('optionerna på EWY', 'the options on EWY'));
+  if (o.kalla === 'IBIT') bits.push(shortForm ? 'IBIT' : L('optionerna på IBIT', 'the options on IBIT'));
   if (outside(o)) bits.push(isEtf(o) ? (shortForm ? L('ETF, utanför evidensen', 'ETF, outside the evidence') : L('ETF utanför studiens evidens', "an ETF outside the study's evidence"))
     : (shortForm ? L('utanför evidensen', 'outside the evidence') : L('aktie utanför studiens evidens (bara S&P 500)', "a stock outside the study's evidence (S&P 500 only)")));
   return bits.join(', ');
@@ -303,14 +314,16 @@ function dekPub(p) {
   const where = p.chart !== p.held ? L(' (' + p.chart + ')', ' (' + p.chart + ')') : '';
   const s1 = L('Kursen ' + money(p.chart_px, p.chart_ccy) + where + ', ' + pctS(p.ret) + ' sedan köpet och ' + ppS(p.ret - p.msci_ret) + ' mot samma insats i MSCI World.',
     'The price is ' + money(p.chart_px, p.chart_ccy) + where + ', ' + pctS(p.ret) + ' since purchase and ' + ppS(p.ret - p.msci_ret) + ' against the same money in MSCI World.');
-  const s2 = malTal(p) === null ? L(' Datakällan har inga optioner för aktien, så ingen riktkurs kan räknas.', ' The data source has no options for the stock, so no price target can be calculated.')
+  const s2 = malTal(p) === null ? L(' Ingen riktkurs: ' + ingenRikt(p) + '.', ' No price target: ' + ingenRikt(p) + '.')
     : L(' Optionerna säger ' + malBelopp(p) + ' om ett år' + (malDatum(p.oiret) ? ' (räknat ' + dS(p.oiret.datum) + ')' : '') + '.',
       ' The options say ' + malBelopp(p) + ' in a year' + (malDatum(p.oiret) ? ' (calculated ' + dS(p.oiret.datum) + ')' : '') + '.');
   return s1 + s2;
 }
 function chartCaptionPub(p) {
   const o = p.oiret || {}, parts = [L('Så läser du grafen. ', 'How to read the chart. ')];
-  parts.push(L('Kursen är ' + px(p.chart_px) + '. De streckade linjerna är nivåer vi följer: ' + levelsText(p) + '. ', 'The price is ' + px(p.chart_px) + '. The dashed lines are levels we follow: ' + levelsText(p) + '. '));
+  // utan nivåer (innehaven köpta 9 okt, 2026-10-14) står ingen mening om streckade linjer som inte finns
+  const harNivaer = watched(p).length > 0;
+  parts.push(L('Kursen är ' + px(p.chart_px) + '. ' + (harNivaer ? 'De streckade linjerna är nivåer vi följer: ' + levelsText(p) + '. ' : ''), 'The price is ' + px(p.chart_px) + '. ' + (harNivaer ? 'The dashed lines are levels we follow: ' + levelsText(p) + '. ' : '')));
   if (hasOpt(p)) {
     const q = o.quantiles_12m;
     parts.push(L('Till höger om i dag visar solfjädern vad optionspriserna säger om nästa år: hälften av utfallen mellan ' + px(q.q25) + ' och ' + px(q.q75) + ' och det förväntade priset ' + px(o.target_12m) + ', avrundat till riktkursen ' + num(malTal(p), 0) + '.',
@@ -353,6 +366,7 @@ function storyHeadline(p) {
   return L(n + ' ' + pctS(p.ret) + ' sedan köpet', n + ' ' + pctS(p.ret) + ' since purchase');
 }
 function heldLine(p) {
+  if (agd(p)) return L(agdText(p).replace(/^ä/, 'Ä') + '. Köpt ' + dSY(p.entry_date) + '.', agdText(p).replace(/^h/, 'H') + '. Bought ' + dSY(p.entry_date) + '.');
   if (p.chart !== p.held && pub()) return L('Ägs som ' + short(p.held) + ' på ' + exchange(p) + ' i euro; grafen och riktkursen gäller ' + p.chart + ' i dollar.',
     'Held as ' + short(p.held) + ' on ' + exchange(p) + ' in euros; the chart and the price target apply to ' + p.chart + ' in dollars.');
   return L(exchange(p) + ', ' + ccyWord(p.ccy) + '. Köpt ' + dSY(p.entry_date) + '.', exchange(p) + ', ' + p.ccy + '. Bought ' + dSY(p.entry_date) + '.');
@@ -417,7 +431,7 @@ function checks(p) {
       'The options: expected price in a year ' + px(o.target_12m) + ', rounded to the price target ' + num(malTal(p), 0) + (malNot(p) ? ' (' + malNot(p) + ')' : '') + '.')] });
   }
   else {
-    out.push({ v: L('– Går inte', '– Not possible'), c: 'na', parts: [L('Datakällan har inga optioner för ' + p.chart + ', så ingen riktkurs ur optionerna kan räknas.', 'The data source has no options for ' + p.chart + ', so no option price target can be calculated.')] });
+    out.push({ v: L('– Går inte', '– Not possible'), c: 'na', parts: [L('Ingen riktkurs för ' + p.chart + ': ' + ingenRikt(p) + '.', 'No price target for ' + p.chart + ': ' + ingenRikt(p) + '.')] });
   }
   return out;
 }
@@ -599,13 +613,32 @@ function excess(host, opt) {
   return svg;
 }
 
+/* Puffarnas plats i raden (2026-10-14: nio innehav; CSS:en var skriven för exakt fem). data-b gäller breda skärmar:
+   rader om fem på ett raster med 60 kolumner, och en sista rad med färre puffar delar hela bredden lika. data-t gäller
+   surfplattan: rader om tre på sex kolumner; blir det två eller fyra över står de som halva rader överst (som de två
+   största förut). f = först i raden (ingen linje till vänster), l = sist (ingen luft till höger), tt/bt = linje överst. */
+function radPlatser(desk) {
+  const s = [...desk.children], n = s.length, rest5 = n % 5, halva = n === 1 ? 0 : n % 3 === 2 ? 2 : n % 3 === 1 ? 4 : 0;
+  s.forEach((x, i) => {
+    const sistaRad = rest5 && i >= n - rest5, iRad = i % 5, iRadens = sistaRad ? rest5 : 5;
+    x.dataset.b = ((iRad === 0 ? 'f' : '') + (iRad === iRadens - 1 ? 'l' : '')) || 'm';
+    x.dataset.bs = String(sistaRad ? 60 / rest5 : 12);
+    x.dataset.bt = i >= 5 ? '1' : '0';
+    const halv = i < halva, j = halv ? i % 2 : (i - halva) % 3, iRadT = halv ? 2 : 3;
+    x.dataset.t = n === 1 ? 'fl' : (((j === 0 ? 'f' : '') + (j === iRadT - 1 ? 'l' : '')) || 'm');
+    x.dataset.ts = n === 1 ? '6' : halv ? '3' : '2';
+    x.dataset.tt = (halv ? i >= 2 : i - halva >= 3 || (halva > 0 && i >= halva)) ? '1' : '0';
+  });
+}
+/* stapelns namn: de längsta namnen bröts på två rader i högerspalten (Global Water Resources), så kortformen gäller där */
+const stapelNamn = p => (nm(p).length > 17 && TINY[p.id]) || nm(p);
 /* --- staplarna: varje position mot samma kronor i MSCI World (bild 03) --- */
 function bars(host) {
   const sk = skin(host); host.textContent = '';
   const pp = pub(), val = p => (pp ? p.excess_sek / P.cost_sek : p.excess_sek);
   const rows = POS.slice().sort((a, b) => val(b) - val(a));
   const lo = Math.min(0, ...rows.map(val)), hi = Math.max(0, ...rows.map(val)), span = (hi - lo) || 1;
-  const wrap = el('div', 'bars'); host.append(wrap);
+  const wrap = el('div', 'bars' + (POS.length > 6 ? ' tata' : '')); host.append(wrap);  // tata: fler än sex rader tar mindre luft (2026-10-14)
   const tip = tipFor(host);
   rows.forEach(p => {
     const v = val(p), row = el('div', 'barrow');
@@ -614,7 +647,7 @@ function bars(host) {
     const zero = (0 - lo) / span * 100, w = Math.abs(v) / span * 100;
     sv('line', { x1: r1(zero), x2: r1(zero), y1: 0, y2: 14, stroke: sk.ink3, 'stroke-width': 1, 'vector-effect': 'non-scaling-stroke' }, s);
     sv('rect', { x: r1(v >= 0 ? zero : zero - w), y: 3, width: r1(Math.max(0.6, w)), height: 8, rx: 1.5, fill: v >= 0 ? sk.up : sk.down }, s);
-    row.append(el('span', null, nm(p)), s, el('span', 'v', pp ? ppS(v) : krS(v)));
+    row.append(el('span', null, stapelNamn(p)), s, el('span', 'v', pp ? ppS(v) : krS(v)));
     const show = () => {
       tip.textContent = ''; tip.append(el('div', 'd', nm(p)));
       tipRow(tip, pp ? L('av hela insatsen', 'of the whole stake') : L('mot MSCI World', 'against MSCI World'), pp ? ppS(v) : krS(v), v >= 0 ? sk.up : sk.down);
@@ -801,13 +834,13 @@ function positionChart(host, p, opt) {
   if (ei >= off) {
     const x = xi(ei - off), yb = Y(s.d_low[ei]) + 6, mine = p.chart === p.held;
     sv('path', { d: `M${r1(x)} ${r1(yb)} l-5 9 h10 z`, fill: sk.mal }, svg);
-    const txt = mine ? L('köp ', 'buy ') + px(p.entry_px) : L('köp ' + short(p.held) + ' ' + px(p.entry_px) + ' euro', 'buy ' + short(p.held) + ' EUR ' + px(p.entry_px));
+    const txt = agd(p) ? L('köp', 'buy') : mine ? L('köp ', 'buy ') + px(p.entry_px) : L('köp ' + short(p.held) + ' ' + px(p.entry_px) + ' euro', 'buy ' + short(p.held) + ' EUR ' + px(p.entry_px));
     // etiketten står inom historiken: helst som förut (till vänster om pricken nära i dag, annars till höger), annars på
     // andra sidan, annars kortare. Ett köp i ett annat papper än grafens får inte ett pris som inte står på grafens axel,
     // så dess korta form är bara "köp" (2026-10-06: i mobilen klipptes "köp FLXK 82,15 euro" av vänsterkanten)
     const kt = halo(stext(svg, sk, x + 8, yb + 9, txt, { fill: sk.mal, 'font-size': 11, 'font-weight': 600 }), sk);
     const forst = x > m.l + histW - 110 ? 'end' : 'start';
-    const lagd = [txt, mine ? L('köp ', 'buy ') + px(p.entry_px) : L('köp', 'buy')].some(str => {
+    const lagd = [txt, mine && !agd(p) ? L('köp ', 'buy ') + px(p.entry_px) : L('köp', 'buy')].some(str => {
       kt.textContent = str; const w = bredd(kt, 6.4);
       const fri = { end: x - 8 - w >= m.l, start: x + 8 + w <= m.l + histW - 4 }, andra = forst === 'end' ? 'start' : 'end';
       const val = fri[forst] ? forst : fri[andra] ? andra : null;
@@ -995,6 +1028,7 @@ function teaser(p) {
 }
 function calText(p) {
   const c = (p.calendar || []).filter(e => e.date).slice().sort((a, b) => a.date.localeCompare(b.date));
+  if (!c.length && agd(p)) return L('inga rapporter', 'no reports');  // bitcoin (2026-10-14)
   return c.length ? c.map(e => dS(e.date) + (e.estimate === true ? L(' (prel.)', ' (prelim.)') : '') + (e.ticker !== p.chart && e.ticker !== p.held ? ' ' + (CAL[e.ticker] || e.ticker) : '')).join(', ') : '—';
 }
 function calendarList(host) {
@@ -1030,7 +1064,7 @@ function borslistanPub(host, subHost) {
     td([pctU(p.weight, 0)]);
     td([el('span', p.ret >= 0 ? 'pos' : 'neg', pctS(p.ret)), el('span', 's', L('kurs ', 'price ') + sgn(p.asset_ret * 100, 1) + L(', valuta ', ', currency ') + sgn(p.fx_ret * 100, 1) + (ok(p.div_ret) && p.div_ret > 0 ? L(', utd. ', ', div. ') + sgn(p.div_ret * 100, 1) : ''))]);
     td([ppS(p.ret - p.msci_ret), el('span', 's', 'MSCI ' + pctS(p.msci_ret))]);
-    td(malTal(p) === null ? ['—', el('span', 's', L('inga optioner', 'no options'))] : [num(malTal(p), 0), el('span', 's', malNot(p) || ccyWord(p.chart_ccy))]);
+    td(malTal(p) === null ? ['—', el('span', 's', ingenRiktKort(p))] : [num(malTal(p), 0), el('span', 's', malNot(p) || ccyWord(p.chart_ccy))]);
     td(hasOpt(p) ? [tillRikt(p), el('span', 's', L('från ', 'from ') + px(p.chart_px) + (p.chart !== p.held ? ' (' + p.chart + ')' : ''))] : ['—']);
     const cal = (p.calendar || []).filter(e => e.date).slice().sort((x, y) => x.date.localeCompare(y.date));
     const inner = cal.filter(e => e.ticker !== p.chart && e.ticker !== p.held);
@@ -1110,7 +1144,7 @@ function forsta() {
   let titel = L('Kvällsupplagan', 'Evening edition');
   document.title = 'Portföljen · ' + titel;
   $('tag').textContent = pub() ? L('Försöket att slå världsindex: varje köp jämförs med samma insats i MSCI World samma dag.', 'Trying to beat the world index: every purchase is compared with the same money in MSCI World on the same day.')
-    : L('En tidning om fem positioner, skriven av maskinen två gånger om dagen.', 'A newspaper about five positions, written by the machine twice a day.');
+    : L('En tidning om ' + antalOrd(POS.length) + ' positioner, skriven av maskinen två gånger om dagen.', 'A newspaper about ' + antalOrd(POS.length) + ' positions, written by the machine twice a day.');
   controls($('ctrls'), ch => { setState(ch, true); forsta(); });
   ears($('ear-left'), $('ear-right'), ed);
   notis();
@@ -1127,10 +1161,11 @@ function forsta() {
   $('g-bars-h').textContent = pub() ? L('Varje position, bidrag till försprånget', 'Each position, contribution to the lead') : L('Varje position mot samma kronor i MSCI World', 'Each position against the same money in MSCI World');
   $('g-bars-note').textContent = barsNote();
   excessTable($('ex-table'), $('ex-sum'));
-  const desk = $('desk'); desk.textContent = ''; BYW.forEach(p => desk.append(teaser(p)));
+  const desk = $('desk'); desk.textContent = ''; BYW.forEach(p => desk.append(teaser(p))); radPlatser(desk);
   $('brief-h').textContent = briefLabel(ed);
   const bl = $('brief-lines'); bl.textContent = ''; brief(ed).forEach(t => bl.append(el('p', null, t)));
   $('cal-h').textContent = L('Kalendern', 'Calendar'); calendarList($('cal'));
+  $('cal').classList.toggle('tva', $('cal').children.length > 5);  // fler än fem rader: två spalter på breda skärmar (2026-10-14)
   $('mk-h').textContent = L('Marknaderna ' + onDay(ASOF), 'Markets ' + onDay(ASOF)); markets($('macro'));
   $('list-h').textContent = L('Börslistan', 'The stock table'); borslistan($('list'), $('list-sub'));
   footer($('foot'));
@@ -1161,7 +1196,8 @@ function senasteRuta(pl, p) {
   const d = el('div'); d.append(el('b', null, dSY(b.datum)), el('p', 'plain', senasteText(p)));
   const k = el('p', 'kallor'); k.append(document.createTextNode(L('Källor: ', 'Sources: ')));
   (b.kallor || []).forEach((s, i) => { const a = el('a', null, L(s.sv, s.en)); a.href = s.url; a.rel = 'noopener noreferrer'; if (i) k.append(document.createTextNode('; ')); k.append(a); });
-  k.append(document.createTextNode(L('. Reaktionen är egen beräkning ur stängningskurser.', '. The reaction is our own calculation from closing prices.')));
+  // en text utan kursreaktion (bitcoin, 2026-10-14) har reaktion: false i blogg.js och får ingen not om reaktionen
+  k.append(document.createTextNode(b.reaktion === false ? '.' : L('. Reaktionen är egen beräkning ur stängningskurser.', '. The reaction is our own calculation from closing prices.')));
   d.append(k); pl.append(d);
 }
 function optPub(ob, marks, p, o) {
@@ -1205,7 +1241,7 @@ function positionssida() {
   const vald = nav.querySelector('[aria-current="page"]');
   if (vald && nav.scrollWidth > nav.clientWidth) { const r = vald.getBoundingClientRect(), n = nav.getBoundingClientRect(); nav.scrollLeft += (r.left + r.width / 2) - (n.left + n.width / 2); }
   const kick = $('kick'); kick.textContent = '';
-  kick.append(document.createTextNode(p.name + ' '), el('span', null, p.chart !== p.held ? L('Graf ' + p.chart + ' i dollar, ägd som ' + short(p.held) + ' på ' + exchange(p) + ' i euro', 'Chart ' + p.chart + ' in dollars, held as ' + short(p.held) + ' on ' + exchange(p) + ' in euros') : p.chart + ', ' + exchange(p) + ', ' + ccyWord(p.ccy)));
+  kick.append(document.createTextNode(p.name + ' '), el('span', null, agd(p) ? L(p.chart + ' i ' + ccyWord(p.chart_ccy) + ', ' + agdText(p), p.chart + ' in ' + p.chart_ccy + ', ' + agdText(p)) : p.chart !== p.held ? L('Graf ' + p.chart + ' i dollar, ägd som ' + short(p.held) + ' på ' + exchange(p) + ' i euro', 'Chart ' + p.chart + ' in dollars, held as ' + short(p.held) + ' on ' + exchange(p) + ' in euros') : p.chart + ', ' + exchange(p) + ', ' + ccyWord(p.ccy)));
   $('a-h1').textContent = storyHeadline(p);
   $('a-dek').textContent = dek(p);
   $('a-byline').textContent = byline();
@@ -1216,7 +1252,7 @@ function positionssida() {
   fig(L('Vikt', 'Weight'), pctU(p.weight, 1), L('andel av risken ', 'share of risk ') + pctU(((P.risk || {}).contrib || {})[p.id], 0));
   fig(L('Mot MSCI World', 'vs MSCI World'), pub() ? ppS(p.ret - p.msci_ret) : krS(p.excess_sek), L('MSCI World samma dag ', 'MSCI World from the same day ') + pctS(p.msci_ret));
   if (pub()) {
-    fig(L('Riktkurs om ett år', 'Price target in a year'), malBelopp(p), malTal(p) === null ? L('inga optioner hos datakällan', 'no options at the data source') : (malNot(p) || L('ur optionspriserna', 'from option prices')));
+    fig(L('Riktkurs om ett år', 'Price target in a year'), malBelopp(p), malTal(p) === null ? ingenRikt(p) : (malNot(p) || L('ur optionspriserna', 'from option prices')));
     fig(L('Nästa rapport', 'Next report'), calText(p), L('ur kalendern', 'from the calendar'));
   }
   chartLegend($('legend'), p);
@@ -1236,7 +1272,7 @@ function positionssida() {
   const ob = $('opt-body'); ob.textContent = '';
   const o = p.oiret || {};
   const marks = el('div', 'marks');
-  if (!hasOpt(p)) { marks.append(el('span', 'mark warn', L('inga optioner', 'no options'))); ob.append(marks, el('p', null, L('Datakällan har inga optioner för ' + p.chart + ', så maskinen visar vanlig svängning i stället för en riktkurs.', 'The data source has no options for ' + p.chart + ', so the machine shows ordinary swings instead of a price target.'))); }
+  if (!hasOpt(p)) { marks.append(el('span', 'mark warn', ingenRiktKort(p))); ob.append(marks, el('p', null, L('Ingen riktkurs för ' + p.chart + ': ' + ingenRikt(p) + '. Maskinen visar vanlig svängning i stället.', 'No price target for ' + p.chart + ': ' + ingenRikt(p) + '. The machine shows ordinary swings instead.'))); }
   else if (pub()) optPub(ob, marks, p, o);
   // talen bakom grafen
   const tt = $('chart-table'); tt.textContent = '';
@@ -1290,7 +1326,7 @@ function metod() {
 const api = {
   S, P, POS, BYW, ASOF, BUILT, PROTOTYP, state, setState, applyRoot, href, L, LV, en, pub, upplaga, tema,
   fmt: { num, sgn, pctU, pctS, pct0, ppS, kr, krS, kronor, px, money, tal, dS, dSY, dL, wd, cap, onDay },
-  nm, prose, pos, watched, levelsText, malTal, malNot, malBelopp, senaste, senasteText, regD, regW, hasOpt, oiNote, events, evList, edDate, approxMonths, outside, short, exchange, calText,
+  nm, prose, pos, watched, levelsText, malTal, malNot, malBelopp, ingenRikt, agd, agdText, senaste, senasteText, regD, regW, hasOpt, oiNote, events, evList, edDate, approxMonths, outside, short, exchange, calText,
   text: { headline, lede, byline, brief, briefLabel, storyHeadline, heldLine, dek, checks, chartCaption, barsNote },
   chart: { gauge, gaugeKeys, excess, bars, spark, positionChart, chartLegend, skin },
   dom: { el, put, partsTo, controls, ears, strip, calendarList, markets, borslistan, footer, teaser },
